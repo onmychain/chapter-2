@@ -1,7 +1,7 @@
 import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { expect } from "chai"
-import { Contract } from "ethers"
+import { BigNumber, Contract } from "ethers"
 import { ethers } from "hardhat"
 
 describe("Staking", function () {
@@ -236,6 +236,64 @@ describe("Staking", function () {
             const timestamp = await time.latest()
             expect(await staking.lastUpdated(signer.address)).to.eq(timestamp)
         })
+    })
+
+    describe("Withdraw", async function () {
+
+        let token: Contract, staking: Contract
+        let signer: SignerWithAddress
+        let amount: BigNumber
+        let reward = ethers.utils.parseEther("100")
+
+        beforeEach(async function () {
+            [token, staking] = await loadFixture(deployFixture)
+            const signers = await ethers.getSigners()
+            signer = signers[0]
+            amount = ethers.utils.parseEther("100000")
+            await token.approve(staking.address, amount)
+            await staking.deposit(amount)
+            await time.increase(60*60-1)
+        })
+
+        it("Should change token balances", async function () {
+            amount = amount.div(2)
+            await expect(staking.withdraw(amount)).to.changeTokenBalances(token,
+                [signer, staking],
+                [amount, amount.mul(-1)]
+            )
+        })
+        it("Should decrement balanceOf(address)", async function () {
+            const balanceOf = await staking.balanceOf(signer.address)
+            await staking.withdraw(amount)
+            expect(await staking.balanceOf(signer.address)).to.eq(balanceOf.sub(amount).add(reward))
+        })
+        it("Should compound rewards", async function () {
+            await staking.withdraw(amount)
+            const timestamp = await time.latest()
+            expect(await staking.balanceOf(signer.address)).to.eq(reward)
+            expect(await staking.claimed(signer.address)).to.eq(reward)
+            expect(await staking.lastUpdated(signer.address)).to.eq(timestamp)
+        })
+        it("Should decrement staking balance", async function () {
+            const balance = await staking.stakeBalance()
+            await staking.withdraw(amount)
+            expect(await staking.stakeBalance()).to.eq(balance.sub(amount).add(reward))
+        })
+
+        describe("Validations", function () {
+            it("Should revert if amount gt balanceOf(address)", async function () {
+                await expect(staking.withdraw(amount.add(1))).to.be.revertedWith("Insufficient funds")
+            })
+        })
+
+        describe("Events", function () {
+            it("Should emit Withdraw event", async function () {
+                await expect(staking.withdraw(amount)).to.emit(staking, "Withdraw").withArgs(
+                    signer.address, amount
+                )
+            })
+        })
+
     })
 
 })

@@ -15,6 +15,7 @@ contract Staking {
     uint public stakeBalance = 0;
 
     event Deposit(address sender, uint amount);
+    event Withdraw(address sender, uint amount);
 
     mapping(address => uint) public balanceOf;
     mapping(address => uint) public lastUpdated;
@@ -72,6 +73,15 @@ contract Staking {
         balanceOf[msg.sender] += amount;
         stakeBalance += amount;
         _update(amount);
+    }
+
+    function withdraw(uint amount_) external {
+        require(balanceOf[msg.sender] >= amount_, "Insufficient funds");
+        _compound();
+        balanceOf[msg.sender] -= amount_;
+        stakeBalance -= amount_;
+        token.safeTransfer(msg.sender, amount_);
+        emit Withdraw(msg.sender, amount_);
     }
 
 }
