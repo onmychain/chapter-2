@@ -138,4 +138,55 @@ describe("Staking", function () {
 
     })
 
+    describe("Claim", function () {
+        let token: Contract, staking: Contract
+        let signer: SignerWithAddress
+        let amount = ethers.utils.parseEther("100000")
+        let reward = ethers.utils.parseEther("100")
+
+        beforeEach(async function () {
+            [token, staking] = await loadFixture(deployFixture)
+            const signers = await ethers.getSigners()
+            signer = signers[0]
+            await token.approve(staking.address, amount)
+            await staking.deposit(amount)
+            await time.increase(60*60-1)
+        })
+
+        it("should change token balances", async function () {
+            await expect(staking.claim()).to.changeTokenBalances(token,
+                [signer, staking],
+                [reward, reward.mul(-1)]
+            )
+        })
+
+        it("Should increment claimed", async function () {
+            await staking.claim()
+            expect(await staking.claimed(signer.address)).to.eq(reward)
+        })
+
+        it("Should update lastUpdated claimed", async function () {
+            await staking.claim()
+            const timestamp = await time.latest()
+            expect(await staking.lastUpdated(signer.address)).to.eq(timestamp)
+        })
+
+        it("Should not change the balanceOf(address)", async function () {
+            const balanceOf = await staking.balanceOf(signer.address)
+            await staking.claim()
+            expect(await staking.balanceOf(signer.address)).to.eq(balanceOf)
+        })
+
+        it("Should not change the stake balance", async function () {
+            const balance = await staking.stakeBalance()
+            await staking.claim()
+            expect(await staking.stakeBalance()).to.eq(balance)
+        })
+        it("Should decrement the reward balance", async function () {
+            const balance = await staking.rewardBalance()
+            await staking.claim()
+            expect(await staking.rewardBalance()).to.eq(balance.sub(reward))
+        })
+    })
+
 })
