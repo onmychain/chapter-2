@@ -189,4 +189,53 @@ describe("Staking", function () {
         })
     })
 
+    describe("Compound", function () {
+
+        let token: Contract, staking: Contract
+        let signer: SignerWithAddress
+        let amount = ethers.utils.parseEther("100000")
+        let reward = ethers.utils.parseEther("100")
+
+        beforeEach(async function () {
+            [token, staking] = await loadFixture(deployFixture)
+            const signers = await ethers.getSigners()
+            signer = signers[0]
+            await token.approve(staking.address, amount)
+            await staking.deposit(amount)
+            await time.increase(60*60-1)
+        })
+
+        it("Should not change token balances", async function () {
+            await expect(staking.compound()).to.changeTokenBalances(token,
+                [signer, staking],
+                [0, 0]
+            )
+        })
+        it("Should increment claimed", async function () {
+            const claimed = await staking.claimed(signer.address)
+            await staking.compound()
+            expect(await staking.claimed(signer.address)).to.eq(claimed.add(reward))
+        })
+        it("Should increment balanceOf(address)", async function () {
+            const balanceOf = await staking.balanceOf(signer.address)
+            await staking.compound()
+            expect(await staking.balanceOf(signer.address)).to.eq(balanceOf.add(reward))
+        })
+        it("Should increment staking balance", async function () {
+            const balance = await staking.stakeBalance()
+            await staking.compound()
+            expect(await staking.stakeBalance()).to.eq(balance.add(reward))
+        })
+        it("Should decrement the rewards balance", async function () {
+            const balance = await staking.rewardBalance()
+            await staking.compound()
+            expect(await staking.rewardBalance()).to.eq(balance.sub(reward))
+        })
+        it("Should update lastUpdated", async function () {
+            await staking.compound()
+            const timestamp = await time.latest()
+            expect(await staking.lastUpdated(signer.address)).to.eq(timestamp)
+        })
+    })
+
 })

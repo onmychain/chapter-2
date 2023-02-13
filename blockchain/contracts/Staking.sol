@@ -63,4 +63,15 @@ contract Staking {
         lastUpdated[msg.sender] = block.timestamp;
     }
 
+    function compound() external {
+        _compound();
+    }
+
+    function _compound() internal {
+        uint amount = _rewards(msg.sender);
+        balanceOf[msg.sender] += amount;
+        stakeBalance += amount;
+        _update(amount);
+    }
+
 }
