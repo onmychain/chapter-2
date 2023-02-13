@@ -16,15 +16,15 @@ describe("Token", function () {
     }
 
     describe("Deployment", function () {
-        it("Should have a name", async function () {
+        it("Should have the name Token", async function () {
             const token = await loadFixture(deployFixture)
             expect(await token.name()).to.eq(name)
         })
-        it("Should have a symbol", async function () {
+        it("Should have the symbol TKN", async function () {
             const token = await loadFixture(deployFixture)
             expect(await token.symbol()).to.eq(symbol)
         })
-        it("Should have a totalSupply", async function () {
+        it("Should have a total supply of 100,000,000", async function () {
             const token = await loadFixture(deployFixture)
             expect(await token.totalSupply()).to.eq(totalSupply)
         })
