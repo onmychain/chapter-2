@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract Staking {
 
     IERC20 public immutable token;
-    uint public immutable rewardsPerHour = 100000000000000; // 0.01%
+    uint public immutable rewardsPerHour = 1000; // 0.01%
 
     uint public stakeBalance = 0;
 
@@ -41,6 +41,14 @@ contract Staking {
         lastUpdated[msg.sender] = block.timestamp;
         stakeBalance += amount_;
         emit Deposit(msg.sender, amount_);
+    }
+
+    function rewards(address address_) external view returns (uint) {
+        return _rewards(address_);
+    }
+
+    function _rewards(address address_) internal view returns (uint) {
+        return (block.timestamp - lastUpdated[address_]) * balanceOf[address_] / (rewardsPerHour * 1 hours);
     }
 
 }

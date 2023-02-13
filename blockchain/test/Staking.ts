@@ -40,8 +40,10 @@ describe("Staking", function () {
         it("Should have 0 stake balance", async function () {
             expect(await staking.stakeBalance()).to.eq(0)
         })
-        it("Should have 0.1% rewards per second", async function () {
-            expect(await staking.rewardsPerSecond()).to.eq(ethers.utils.parseEther("0.0001"))
+        it("Should have 0.01% rewards per hour", async function () {
+            expect(await staking.rewardsPerHour()).to.eq(
+                1000
+            )
         })
     })
 
@@ -103,6 +105,35 @@ describe("Staking", function () {
                     signer.address, amount
                 )
             })
+        })
+
+    })
+
+    describe("Rewards", function () {
+
+        let token: Contract, staking: Contract
+        let signer: SignerWithAddress
+        let amount = ethers.utils.parseEther("100000")
+
+        beforeEach(async function () {
+            [token, staking] = await loadFixture(deployFixture)
+            const signers = await ethers.getSigners()
+            signer = signers[0]
+            await token.approve(staking.address, amount)
+            await staking.deposit(amount)
+        })
+
+        it("Should have 100 rewards after one hour", async function () {
+            await time.increase(60*60)
+            expect(await staking.rewards(signer.address)).to.eq(ethers.utils.parseEther("100"))
+        })
+        it("Should have 1/36 rewards after one second", async function () {
+            await time.increase(1)
+            expect(await staking.rewards(signer.address)).to.eq(amount.div(1000).div(3600))
+        })
+        it("Should have 1 reward after 36 seconds", async function () {
+            await time.increase(36)
+            expect(await staking.rewards(signer.address)).to.eq(ethers.utils.parseEther("1"))
         })
 
     })
