@@ -187,6 +187,14 @@ describe("Staking", function () {
             await staking.claim()
             expect(await staking.rewardBalance()).to.eq(balance.sub(reward))
         })
+
+        describe("Events", function () {
+            it("Should emit Claim event", async function () {
+                await expect(staking.claim()).to.emit(staking, "Claim").withArgs(
+                    signer.address, reward
+                )
+            })
+        })
     })
 
     describe("Compound", function () {
@@ -235,6 +243,14 @@ describe("Staking", function () {
             await staking.compound()
             const timestamp = await time.latest()
             expect(await staking.lastUpdated(signer.address)).to.eq(timestamp)
+        })
+
+        describe("Events", function () {
+            it("Should emit Compound event", async function () {
+                await expect(staking.compound()).to.emit(staking, "Compound").withArgs(
+                    signer.address, reward
+                )
+            })
         })
     })
 

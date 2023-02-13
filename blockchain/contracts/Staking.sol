@@ -16,6 +16,8 @@ contract Staking {
 
     event Deposit(address sender, uint amount);
     event Withdraw(address sender, uint amount);
+    event Claim(address sender, uint amount);
+    event Compound(address sender, uint amount);
 
     mapping(address => uint) public balanceOf;
     mapping(address => uint) public lastUpdated;
@@ -57,6 +59,7 @@ contract Staking {
         uint amount = _rewards(msg.sender);
         token.safeTransfer(msg.sender, amount);
         _update(amount);
+        emit Claim(msg.sender, amount);
     }
 
     function _update(uint amount_) internal {
@@ -73,6 +76,7 @@ contract Staking {
         balanceOf[msg.sender] += amount;
         stakeBalance += amount;
         _update(amount);
+        emit Compound(msg.sender, amount);
     }
 
     function withdraw(uint amount_) external {
